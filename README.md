@@ -1,6 +1,8 @@
 # VC Services Version Checker
 
-A bash script that queries OpenShift deployments and APIs to collect version information and generate a Markdown report.
+Automating commands I use to check out project versions/helm chart/etc for VC Services in OpenShift. 
+Basically just calling `oc` CLI to fetch labels, or call some ACA-Py endpoints. 
+Should never have any credentials or anything like that added to config or script, it's just relying on accessing OCP locally with your token and then running the CLI, so you must have OCP access to any projects listed in config.
 
 ## Prerequisites
 
