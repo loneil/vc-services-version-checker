@@ -26,9 +26,29 @@ env|<service>|<env_name>|<namespace>
 # Query deployment labels
 query|<service>|<deployment_name>|<label>|<display_name>
 
+# Optional: override the deployment name used by query| lines for a specific env
+# (e.g. when a namespace uses a differently-named deployment)
+query-deployment|<service>|<env>|<deployment_name>
+
 # Query API endpoint (calls /status, extracts "version" field)
 api|<service>|<env>|<secret_name>|<secret_key>|<base_url>|<display_name>
 ```
+
+### Per-environment deployment overrides
+
+`query|` lines apply the same deployment name to every environment of a service.
+When a single environment uses a differently-named deployment (for example, the
+traction sandbox namespace prefixes resources with `traction-sandbox-`), add a
+`query-deployment|` line to override the name for that env only:
+
+```
+query|traction|traction-tenant-proxy|app.kubernetes.io/version|Release Tag
+query|traction|traction-tenant-proxy|helm.sh/chart|Helm Chart
+query-deployment|traction|sandbox|traction-sandbox-tenant-proxy
+```
+
+All `query|` lines for that service will use the overridden deployment name in
+the specified env, and fall back to the default in all other envs.
 
 ## Usage
 

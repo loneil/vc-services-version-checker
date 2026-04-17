@@ -28,6 +28,7 @@ declare -A SERVICE_QUERIES
 declare -A API_QUERIES
 declare -A NS_ACCESS
 declare -A RESULTS
+declare -A DEPLOYMENT_OVERRIDE
 
 SERVER_URL=""
 
@@ -127,6 +128,14 @@ parse_config() {
                 else
                     SERVICE_QUERIES["$service"]="$query_line"
                 fi
+                ;;
+            query-deployment)
+                # query-deployment|<service>|<env>|<deployment_name>
+                # Overrides the deployment name used by query| lines for this service+env.
+                local service="${FIELDS[1]}"
+                local env_name="${FIELDS[2]}"
+                local deployment_name="${FIELDS[3]}"
+                DEPLOYMENT_OVERRIDE["$service:$env_name"]="$deployment_name"
                 ;;
             api)
                 # api|<service>|<env>|<secret_name>|<secret_key>|<url>|<display_name>
@@ -335,14 +344,15 @@ run_queries() {
             for env in ${SERVICE_ENVS[$service]}; do
                 local ns="${ENV_NS[$service:$env]}"
                 local result_key="$service:$env:$query_index"
-                
+                local effective_deployment="${DEPLOYMENT_OVERRIDE[$service:$env]:-$deployment}"
+
                 ((++total_queries)) || true
-                
+
                 if [[ "${NS_ACCESS[$ns]}" != "yes" ]]; then
                     RESULTS["$result_key"]="NO ACCESS"
                 else
                     local value
-                    value=$(get_label_value "$ns" "$deployment" "$label")
+                    value=$(get_label_value "$ns" "$effective_deployment" "$label")
                     RESULTS["$result_key"]="$value"
                     if [[ "$value" != "NOT FOUND" ]]; then
                         ((++successful_queries)) || true
