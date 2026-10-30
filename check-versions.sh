@@ -117,11 +117,16 @@ parse_config() {
                 fi
                 ENV_NS["$service:$env_name"]="$namespace"
                 ;;
-            query)
+            query|image)
                 local service="${FIELDS[1]}"
                 local deployment="${FIELDS[2]}"
                 local label="${FIELDS[3]}"
                 local display="${FIELDS[4]}"
+                # image|<service>|<deployment>|<display_name> shares the query list under a marker label
+                if [[ "$type" == "image" ]]; then
+                    label="@image"
+                    display="${FIELDS[3]}"
+                fi
                 local query_line="$deployment|$label|$display"
                 if [[ -n "${SERVICE_QUERIES[$service]}" ]]; then
                     SERVICE_QUERIES["$service"]+=$'\n'"$query_line"
@@ -271,6 +276,29 @@ get_label_value() {
         echo "$result"
     fi
 }
+
+# Tag of the deployment's first container image (registry/repo prefix dropped)
+get_image_tag() {
+    local ns="$1"
+    local deployment="$2"
+
+    local image
+    image=$(oc get deployment "$deployment" -n "$ns" -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null) || image=""
+
+    if [[ -z "$image" ]]; then
+        echo "NOT FOUND"
+        return
+    fi
+
+    local name="${image##*/}"
+    if [[ "$name" == *@* ]]; then
+        echo "${name#*@}"
+    elif [[ "$name" == *:* ]]; then
+        echo "${name##*:}"
+    else
+        echo "latest"
+    fi
+}
 get_api_value() {
     local ns="$1"
     local secret_name="$2"
@@ -352,7 +380,11 @@ run_queries() {
                     RESULTS["$result_key"]="NO ACCESS"
                 else
                     local value
-                    value=$(get_label_value "$ns" "$effective_deployment" "$label")
+                    if [[ "$label" == "@image" ]]; then
+                        value=$(get_image_tag "$ns" "$effective_deployment")
+                    else
+                        value=$(get_label_value "$ns" "$effective_deployment" "$label")
+                    fi
                     RESULTS["$result_key"]="$value"
                     if [[ "$value" != "NOT FOUND" ]]; then
                         ((++successful_queries)) || true

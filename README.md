@@ -30,6 +30,10 @@ query|<service>|<deployment_name>|<label>|<display_name>
 # (e.g. when a namespace uses a differently-named deployment)
 query-deployment|<service>|<env>|<deployment_name>
 
+# Query the image tag of a deployment's first container
+# (also honours query-deployment overrides)
+image|<service>|<deployment_name>|<display_name>
+
 # Query API endpoint (calls /status, extracts "version" field)
 api|<service>|<env>|<secret_name>|<secret_key>|<base_url>|<display_name>
 ```
